@@ -4,23 +4,26 @@ import Photos
 import Flutter
 
 public protocol VideoGeneratorServiceInterface {
-    func writeVideofile(srcPath:String, destPath:String, processing: [String: [String:Any]], result: @escaping FlutterResult, eventSink : FlutterEventSink?)
+    func writeVideofile(srcPath:String, destPath:String, processing: [String: [String:Any]], inTime: Int64, outTime: Int64, result: @escaping FlutterResult, eventSink : FlutterEventSink?)
     func cancelCompression( result: @escaping FlutterResult)
 }
 
 public class VideoGeneratorService: VideoGeneratorServiceInterface {
       private var exporter: AVAssetExportSession? = nil
-    public func writeVideofile(srcPath:String, destPath:String, processing: [String: [String:Any]], result: @escaping FlutterResult, eventSink : FlutterEventSink?) {
+    public func writeVideofile(srcPath:String, destPath:String, processing: [String: [String:Any]], inTime: Int64, outTime: Int64, result: @escaping FlutterResult, eventSink : FlutterEventSink?) {
         let fileURL = URL(fileURLWithPath: srcPath)
 
         let composition = AVMutableComposition()
         let vidAsset = AVURLAsset(url: fileURL)
 
         // get video track
-        print("aaasd")
+       
         let videoTrack: AVAssetTrack = vidAsset.tracks(withMediaType: .video)[0]
-        print("tabunn")
-        let vidTimerange = CMTimeRangeMake(start: CMTime.zero, duration: vidAsset.duration)
+        let time1 = CMTimeMake(value: inTime, timescale: 1000)
+        let time2 = CMTimeMake(value: outTime, timescale: 1000)
+       
+        let vidTimerange = CMTimeRangeMake(start: time1, duration: time2)
+       
 
         guard let compositionvideoTrack:AVMutableCompositionTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
             result(FlutterError(code: "video_processing_failed",
@@ -141,7 +144,7 @@ public class VideoGeneratorService: VideoGeneratorServiceInterface {
                     }
                     imageFilter.setValue(source, forKey: "inputBackgroundImage")
                     let transform = CGAffineTransform(translationX: filteringRequest.sourceImage.extent.width - watermarkImage.extent.width - CGFloat(truncating: x), y:  CGFloat(truncating: y) - filteringRequest.sourceImage.extent.height)
-                    imageFilter.setValue(watermarkImage.transformed(by: transform), forKey: "inputImage")
+                    imageFilter.setValue(watermarkImage, forKey: "inputImage")
                     source = imageFilter.outputImage!
                 default:
                     print("Not implement filter name")
@@ -162,16 +165,25 @@ public class VideoGeneratorService: VideoGeneratorServiceInterface {
         assetExport.videoComposition = layercomposition
 
         assetExport.outputURL = movieDestinationUrl
-         var exportProgressBarTimer = Timer() // initialize timer
-                        if #available(iOS 10.0, *) {
-                            exportProgressBarTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                            // Get Progress
-                            let progress = Float((assetExport.progress));
-                            if (progress < 0.99 && eventSink != nil) {
-                                eventSink!(progress * 100)
-                            }
-                          }
-                        }
+        //this may not work in ios 18 in the future.
+        var exportProgressBarTimer = Timer() // initialize timer
+        if #available(iOS 10.0, *) {
+            exportProgressBarTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            // Get Progress
+            let progress = Float((assetExport.progress));
+            if (progress < 0.99 && eventSink != nil) {
+                eventSink!(progress * 100)
+            }
+            }
+        }
+        // if #available(iOS 18, *) {
+        //     let states = assetExport.states(updateInterval: 0.1)
+
+            
+        //     if (progress < 0.99 && eventSink != nil) {
+        //         eventSink!(progress * 100)
+        //     }
+        // }
         assetExport.exportAsynchronously{
             switch assetExport.status{
             case .completed:

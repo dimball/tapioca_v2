@@ -9,7 +9,7 @@ import 'package:gallery_saver/gallery_saver.dart';
 import 'package:tapioca_v2/tapioca_v2.dart';
 import 'package:video_player/video_player.dart';
 
-void main() => runApp(MyApp());
+void main() => runApp(const MyApp());
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
   late XFile _video;
   bool isLoading = false;
   static const EventChannel _channel =
-      const EventChannel('video_editor_progress');
+      EventChannel('video_editor_progress');
   late StreamSubscription _streamSubscription;
   int processPercentage = 0;
 
@@ -46,7 +46,7 @@ class _MyAppState extends State<MyApp> {
         processPercentage = (event.toDouble() * 100).round();
       });
     }, onError: (dynamic error) {
-      print('Received error: ${error.message}');
+      debugPrint('Received error: ${error.message}');
     }, cancelOnError: true);
   }
 
@@ -100,11 +100,11 @@ class _MyAppState extends State<MyApp> {
                         final tapiocaBalls = [
                           TapiocaBall.filter(Filters.pink, 0.2),
                           TapiocaBall.textOverlay(
-                              "text", 100, 10, 100, const Color(0xffffc0cb), 1),
+                              "text", 100, 10, 100, const Color(0xffffc0cb)),
                         ];
                         print("will start");
                         final cup = Cup(Content(_video.path), tapiocaBalls);
-                        cup.suckUp(path).then((_) async {
+                        cup.suckUp(path,0,1).then((_) async {
                           print("finished");
                           setState(() {
                             processPercentage = 0;

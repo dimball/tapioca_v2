@@ -42,8 +42,20 @@ public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
                                     details: nil))
                 return
             }
+            guard let inTime = args["inTime"] as? Int64 else {
+                result(FlutterError(code: "inTime_data_not_found",
+                                     message: "the in time is not found.",
+                                     details: nil))
+                return
+            }
+            guard let outTime = args["outTime"] as? Int64 else {
+                result(FlutterError(code: "outTime_data_not_found",
+                                     message: "the out time is not found.",
+                                     details: nil))
+                return
+            }
             video.writeVideofile(srcPath: srcName, destPath: destName,
-                                 processing: processing,result: result, eventSink : self.events)
+                                 processing: processing, inTime: inTime, outTime: outTime, result: result, eventSink : self.events)
 
     case "cancelExport":
         video.cancelCompression(result: result)
