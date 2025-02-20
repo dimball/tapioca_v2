@@ -9,7 +9,8 @@ public protocol VideoGeneratorServiceInterface {
 }
 
 public class VideoGeneratorService: VideoGeneratorServiceInterface {
-      private var exporter: AVAssetExportSession? = nil
+        private var exporter: AVAssetExportSession? = nil
+        private var exportProgressBarTimer:Timer? = nil // initialize timer
     public func writeVideofile(srcPath:String, destPath:String, processing: [String: [String:Any]], inTime: Int64, outTime: Int64, result: @escaping FlutterResult, eventSink : FlutterEventSink?) {
         let fileURL = URL(fileURLWithPath: srcPath)
 
@@ -166,7 +167,6 @@ public class VideoGeneratorService: VideoGeneratorServiceInterface {
 
         assetExport.outputURL = movieDestinationUrl
         //this may not work in ios 18 in the future.
-        var exportProgressBarTimer = Timer() // initialize timer
         if #available(iOS 10.0, *) {
             exportProgressBarTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             // Get Progress
@@ -176,29 +176,30 @@ public class VideoGeneratorService: VideoGeneratorServiceInterface {
             }
             }
         }
-        // if #available(iOS 18, *) {
-        //     let states = assetExport.states(updateInterval: 0.1)
-
-            
-        //     if (progress < 0.99 && eventSink != nil) {
-        //         eventSink!(progress * 100)
-        //     }
-        // }
         assetExport.exportAsynchronously{
             switch assetExport.status{
             case .completed:
                 print("Movie complete")
                 self.exporter = nil
+                self.exportProgressBarTimer?.invalidate()
+                self.exportProgressBarTimer = nil
                 result(nil)
             case  .failed:
                 self.exporter = nil
+                self.exportProgressBarTimer?.invalidate()
+                self.exportProgressBarTimer = nil
                 print("failed \(String(describing: assetExport.error))")
             case .cancelled:
                 self.exporter = nil
-
+                self.exportProgressBarTimer?.invalidate()
+                self.exportProgressBarTimer = nil
                 print("cancelled \(String(describing: assetExport.error))")
             default:
+                self.exporter = nil
+                self.exportProgressBarTimer?.invalidate()
+                self.exportProgressBarTimer = nil
                 print("cancelled \(String(describing: assetExport.error))")
+                result(nil)
                 break
             }
         }
@@ -206,6 +207,9 @@ public class VideoGeneratorService: VideoGeneratorServiceInterface {
     }
      public func cancelCompression(result: FlutterResult) {
             exporter?.cancelExport()
+            self.exporter = nil
+            self.exportProgressBarTimer?.invalidate()
+            self.exportProgressBarTimer = nil
             result(nil)
         }
 }
