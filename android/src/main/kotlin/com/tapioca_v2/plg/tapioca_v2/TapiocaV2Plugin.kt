@@ -13,8 +13,6 @@ import io.flutter.plugin.common.*
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
-
-
 /** TapiocaV2Plugin */
 class TapiocaV2Plugin: FlutterPlugin, MethodCallHandler, PluginRegistry.RequestPermissionsResultListener, ActivityAware {
   /// The MethodChannel that will the communication between Flutter and native Android
@@ -45,14 +43,6 @@ class TapiocaV2Plugin: FlutterPlugin, MethodCallHandler, PluginRegistry.RequestP
       }
     })
   }
-  companion object {
-    @JvmStatic
-    fun registerWith(registrar: Registrar) {
-      val instance = TapiocaV2Plugin()
-      instance.onAttachedToEngine(registrar.messenger())
-    }
-  }
-
 
   override fun onMethodCall(call: MethodCall, result: Result) {
     if (call.method == "getPlatformVersion") {
