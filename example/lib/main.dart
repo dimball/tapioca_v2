@@ -65,7 +65,7 @@ class _MyAppState extends State<MyApp> {
         });
       }
     } catch (error) {
-      print(error);
+      debugPrint(error.toString());
     }
   }
 
@@ -90,28 +90,28 @@ class _MyAppState extends State<MyApp> {
                 : ElevatedButton(
                     child: const Text("Pick a video and Edit it"),
                     onPressed: () async {
-                      print("clicked!");
+                      debugPrint("clicked!");
                       await _pickVideo();
                       var tempDir = await getTemporaryDirectory();
                       final path =
                           '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}result.mp4';
-                      print(tempDir);
+                      debugPrint(tempDir.toString());
                       try {
                         final tapiocaBalls = [
                           TapiocaBall.filter(Filters.pink, 0.2),
                           TapiocaBall.textOverlay(
                               "text", 100, 10, 100, const Color(0xffffc0cb)),
                         ];
-                        print("will start");
+                        debugPrint("will start");
                         final cup = Cup(Content(_video.path), tapiocaBalls);
                         cup.suckUp(path,0,1).then((_) async {
-                          print("finished");
+                          debugPrint("finished");
                           setState(() {
                             processPercentage = 0;
                           });
-                          print(path);
+                          debugPrint(path);
                           GallerySaver.saveVideo(path).then((bool? success) {
-                            print(success.toString());
+                            debugPrint(success.toString());
                           });
                           final currentState = navigatorKey.currentState;
                           if (currentState != null) {
@@ -125,10 +125,10 @@ class _MyAppState extends State<MyApp> {
                             isLoading = false;
                           });
                         }).catchError((e) {
-                          print('Got error: $e');
+                          debugPrint('Got error: $e');
                         });
                       } on PlatformException {
-                        print("error!!!!");
+                        debugPrint("error!!!!");
                       }
                     },
                   )),
