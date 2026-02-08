@@ -21,11 +21,18 @@ class VideoGeneratorService(
 ) : VideoGeneratorServiceInterface {
     override fun writeVideofile(processing: HashMap<String,HashMap<String,Any>>, result: Result, activity: Activity, eventSink: EventChannel.EventSink ) {
         val filters: MutableList<GlFilter> = mutableListOf()
-        val filtersWait: MutableList<TextOverlay> = mutableListOf()
+        // Track timed image overlay filters so we can update their time
+        val timedImageFilters: MutableList<GlImageOverlayFilter> = mutableListOf()
 
         try {
             processing.forEach { (k, v) ->
-                when (k) {
+                // Strip index suffix (e.g. "ImageOverlay_1" → "ImageOverlay")
+                // to support multiple overlays of the same type.
+                val baseKey = if (k.contains("_") && k.last().isDigit()) {
+                    k.substringBeforeLast("_")
+                } else k
+
+                when (baseKey) {
                     "Filter" -> {
                         val passFilter = Filter(v)
                         val filter = GlColorBlendFilter(passFilter)
@@ -37,7 +44,11 @@ class VideoGeneratorService(
                     }
                     "ImageOverlay" -> {
                         val imageOverlay = ImageOverlay(v)
-                        filters.add(GlImageOverlayFilter(imageOverlay))
+                        val filter = GlImageOverlayFilter(imageOverlay)
+                        if (imageOverlay.hasTiming) {
+                            timedImageFilters.add(filter)
+                        }
+                        filters.add(filter)
                     }
                 }
             }
@@ -58,7 +69,10 @@ class VideoGeneratorService(
                 }
 
                 override fun onCurrentWrittenVideoTime(currentTimeMs: Long) {
-                    println("onProgress = $Long")
+                    // Update all timed image overlay filters with current time
+                    for (filter in timedImageFilters) {
+                        filter.currentTimeMs.set(currentTimeMs)
+                    }
                 }
 
                 override fun onCompleted() {
@@ -86,4 +100,3 @@ class VideoGeneratorService(
         composer.cancel()
     }
 }
-

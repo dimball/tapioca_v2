@@ -65,9 +65,21 @@ class TapiocaV2Plugin: FlutterPlugin, MethodCallHandler, PluginRegistry.RequestP
           result.error("processing_data_not_found", "the processing is not found.", null)
           return
         }
+      // Read trimming parameters (milliseconds as doubles from Dart)
+      val inTime: Double = (call.argument<Number>("inTime"))?.toDouble() ?: 0.0
+      val outTime: Double = (call.argument<Number>("outTime"))?.toDouble() ?: 0.0
+
       composer = Mp4Composer(srcFilePath, destFilePath)
+
+      // Apply trimming: inTime = start ms, outTime = duration ms
+      if (inTime > 0 || outTime > 0) {
+        val startMs = inTime.toLong()
+        val endMs = (inTime + outTime).toLong()
+        composer!!.trim(startMs, endMs)
+      }
+
       val generator = VideoGeneratorService(composer!!)
-      generator.writeVideofile(processing, result, getActivity,newEventSink)
+      generator.writeVideofile(processing, result, getActivity, newEventSink)
     } else if (call.method == "cancelExport") {
       val generator = composer?.let { VideoGeneratorService(it) }
       generator?.cancelExport( result)

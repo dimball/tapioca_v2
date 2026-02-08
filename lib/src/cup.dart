@@ -18,19 +18,29 @@ class Cup {
   /// 
   /// [onProgress] receives progress updates as a percentage (0-100)
   Future suckUp(
-    String destFilePath, 
-    double inTime, 
+    String destFilePath,
+    double inTime,
     double outTime,
     {void Function(double progress)? onProgress}
   ) {
-    final Map<String, Map<String, dynamic>> processing = {
-      for (var v in tapiocaBalls) v.toTypeName(): v.toMap()
-    };
+    // Build processing map with unique keys for duplicate types.
+    // If there are two ImageOverlay entries, they become
+    // "ImageOverlay" and "ImageOverlay_1" so the map doesn't drop one.
+    final Map<String, Map<String, dynamic>> processing = {};
+    final typeCounts = <String, int>{};
+    for (var v in tapiocaBalls) {
+      final baseName = v.toTypeName();
+      final count = typeCounts[baseName] ?? 0;
+      typeCounts[baseName] = count + 1;
+      final key = count == 0 ? baseName : '${baseName}_$count';
+      processing[key] = v.toMap();
+    }
+
     return VideoEditorTapioca.writeVideofile(
-      content.name, 
-      destFilePath, 
-      inTime, 
-      outTime, 
+      content.name,
+      destFilePath,
+      inTime,
+      outTime,
       processing,
       onProgress: onProgress,
     );

@@ -8,25 +8,24 @@ public class TapiocaV2Plugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "video_editor", binaryMessenger: registrar.messenger())
         let eventChannel = FlutterEventChannel(name: "video_editor_progress", binaryMessenger: registrar.messenger())
-        
+
         let instance = TapiocaV2Plugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
-         eventChannel.setStreamHandler(instance)
+        eventChannel.setStreamHandler(instance)
+    }
 
-  }
-
-public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    switch call.method {
-    case "writeVideofile":
-        guard let args = call.arguments as? [String: Any] else {
-          result(FlutterError(code: "arguments_not_found",
-                            message: "the arguments is not found.",
-                            details: nil))
-          return
-        }
-        guard let srcName = args["srcFilePath"] as? String else {
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        switch call.method {
+        case "writeVideofile":
+            guard let args = call.arguments as? [String: Any] else {
+                result(FlutterError(code: "arguments_not_found",
+                                    message: "the arguments is not found.",
+                                    details: nil))
+                return
+            }
+            guard let srcName = args["srcFilePath"] as? String else {
                 result(FlutterError(code: "src_file_path_not_found",
-                                    message: "the src file path sr is not found.",
+                                    message: "the src file path is not found.",
                                     details: nil))
                 return
             }
@@ -36,37 +35,42 @@ public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
                                     details: nil))
                 return
             }
-            guard let processing = args["processing"] as?  [String: [String: Any]] else {
+            guard let processing = args["processing"] as? [String: [String: Any]] else {
                 result(FlutterError(code: "processing_data_not_found",
                                     message: "the processing is not found.",
                                     details: nil))
                 return
             }
-            guard let inTime = args["inTime"] as? Int64 else {
-                result(FlutterError(code: "inTime_data_not_found",
-                                     message: "the in time is not found.",
-                                     details: nil))
-                return
-            }
-            guard let outTime = args["outTime"] as? Int64 else {
-                result(FlutterError(code: "outTime_data_not_found",
-                                     message: "the out time is not found.",
-                                     details: nil))
-                return
-            }
-            video.writeVideofile(srcPath: srcName, destPath: destName,
-                                 processing: processing, inTime: inTime, outTime: outTime, result: result, eventSink : self.events)
 
-    case "cancelExport":
-        video.cancelCompression(result: result)
-    default:
-            result("iOS d" + UIDevice.current.systemVersion)
+            // FIX: Dart sends double via MethodChannel. Accept NSNumber and convert to Int64.
+            guard let inTimeNum = args["inTime"] as? NSNumber else {
+                result(FlutterError(code: "inTime_data_not_found",
+                                    message: "the in time is not found.",
+                                    details: nil))
+                return
+            }
+            guard let outTimeNum = args["outTime"] as? NSNumber else {
+                result(FlutterError(code: "outTime_data_not_found",
+                                    message: "the out time is not found.",
+                                    details: nil))
+                return
+            }
+            let inTime = inTimeNum.int64Value
+            let outTime = outTimeNum.int64Value
+
+            video.writeVideofile(srcPath: srcName, destPath: destName,
+                                 processing: processing, inTime: inTime, outTime: outTime,
+                                 result: result, eventSink: self.events)
+
+        case "cancelExport":
+            video.cancelCompression(result: result)
+        default:
+            result("iOS " + UIDevice.current.systemVersion)
         }
     }
 }
 
-extension TapiocaV2Plugin : FlutterStreamHandler {
-
+extension TapiocaV2Plugin: FlutterStreamHandler {
     public func onListen(withArguments arguments: Any?,
                          eventSink events: @escaping FlutterEventSink) -> FlutterError? {
         self.events = events

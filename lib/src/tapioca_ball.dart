@@ -26,6 +26,32 @@ abstract class TapiocaBall {
     return _ImageOverlay(bitmap, x, y);
   }
 
+  /// Creates a timed image overlay with optional fade-in/out.
+  ///
+  /// The overlay is visible from [startMs] to [endMs] (milliseconds,
+  /// relative to the composition timeline — i.e., 0 = start of exported clip).
+  /// [fadeInMs] and [fadeOutMs] control smooth fade transitions.
+  ///
+  /// If timing parameters are omitted (all zero), the overlay is always visible
+  /// (backwards-compatible with [imageOverlay]).
+  static TapiocaBall imageOverlayTimed(
+    Uint8List bitmap,
+    int x,
+    int y, {
+    double startMs = 0,
+    double endMs = 0,
+    double fadeInMs = 0,
+    double fadeOutMs = 0,
+  }) {
+    return _ImageOverlayTimed(
+      bitmap, x, y,
+      startMs: startMs,
+      endMs: endMs,
+      fadeInMs: fadeInMs,
+      fadeOutMs: fadeOutMs,
+    );
+  }
+
   /// Returns a [Map<String, dynamic>] representation of this object.
   Map<String, dynamic> toMap();
 
@@ -110,6 +136,46 @@ class _ImageOverlay extends TapiocaBall {
 
   @override
   String toTypeName() {
+    return 'ImageOverlay';
+  }
+}
+
+class _ImageOverlayTimed extends TapiocaBall {
+  final Uint8List bitmap;
+  final int x;
+  final int y;
+  final double startMs;
+  final double endMs;
+  final double fadeInMs;
+  final double fadeOutMs;
+
+  _ImageOverlayTimed(
+    this.bitmap,
+    this.x,
+    this.y, {
+    required this.startMs,
+    required this.endMs,
+    required this.fadeInMs,
+    required this.fadeOutMs,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'bitmap': bitmap,
+      'x': x,
+      'y': y,
+      'startMs': startMs,
+      'endMs': endMs,
+      'fadeInMs': fadeInMs,
+      'fadeOutMs': fadeOutMs,
+    };
+  }
+
+  @override
+  String toTypeName() {
+    // Re-uses "ImageOverlay" key so native code handles it in the same case.
+    // Timing params are optional — native checks for their presence.
     return 'ImageOverlay';
   }
 }
