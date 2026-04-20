@@ -1,6 +1,7 @@
 package com.tapioca_v2.plg.tapioca_v2
 
 import android.app.Activity
+import android.util.Log
 import com.daasuu.mp4compose.composer.Mp4Composer
 import com.daasuu.mp4compose.filter.*
 import com.tapioca_v2.plg.tapioca_v2.filter.GlImageOverlayFilter
@@ -19,10 +20,16 @@ interface VideoGeneratorServiceInterface {
 class VideoGeneratorService(
     private val composer: Mp4Composer
 ) : VideoGeneratorServiceInterface {
+    companion object {
+        private const val TAG = "VideoGeneratorService"
+    }
+
     override fun writeVideofile(processing: HashMap<String,HashMap<String,Any>>, result: Result, activity: Activity, eventSink: EventChannel.EventSink ) {
         val filters: MutableList<GlFilter> = mutableListOf()
         // Track timed image overlay filters so we can update their time
         val timedImageFilters: MutableList<GlImageOverlayFilter> = mutableListOf()
+
+        Log.d(TAG, "writeVideofile: ${processing.size} processing entries")
 
         try {
             processing.forEach { (k, v) ->
@@ -31,6 +38,8 @@ class VideoGeneratorService(
                 val baseKey = if (k.contains("_") && k.last().isDigit()) {
                     k.substringBeforeLast("_")
                 } else k
+
+                Log.d(TAG, "Processing entry '$k' (baseKey='$baseKey')")
 
                 when (baseKey) {
                     "Filter" -> {
@@ -44,6 +53,14 @@ class VideoGeneratorService(
                     }
                     "ImageOverlay" -> {
                         val imageOverlay = ImageOverlay(v)
+                        val bitmapSize = imageOverlay.bitmap.size
+                        Log.d(TAG, "ImageOverlay '$k': bitmap=${bitmapSize} bytes, " +
+                            "pos=(${imageOverlay.x}, ${imageOverlay.y}), " +
+                            "hasTiming=${imageOverlay.hasTiming}" +
+                            if (imageOverlay.hasTiming)
+                                ", start=${imageOverlay.startMs}ms, end=${imageOverlay.endMs}ms, " +
+                                "fadeIn=${imageOverlay.fadeInMs}ms, fadeOut=${imageOverlay.fadeOutMs}ms"
+                            else "")
                         val filter = GlImageOverlayFilter(imageOverlay)
                         if (imageOverlay.hasTiming) {
                             timedImageFilters.add(filter)
@@ -53,7 +70,7 @@ class VideoGeneratorService(
                 }
             }
         } catch (e: Exception){
-            println(e)
+            Log.e(TAG, "Error parsing processing data: ${e.message}", e)
             activity.runOnUiThread(Runnable {
                 result.error("processing_data_invalid", "Processing data is invalid.", null)
             })
@@ -62,7 +79,7 @@ class VideoGeneratorService(
             .videoFormatMimeType(VideoFormatMimeType.MPEG4)
             .listener(object : Mp4Composer.Listener {
                 override fun onProgress(progress: Double) {
-                    println("onProgress = $progress")
+                    Log.d(TAG, "onProgress = $progress")
                     activity.runOnUiThread(Runnable {
                         eventSink.success(progress)
                     })
@@ -88,7 +105,7 @@ class VideoGeneratorService(
                 }
 
                 override fun onFailed(exception: Exception) {
-                    println(exception);
+                    Log.e(TAG, "Video processing failed: ${exception.message}", exception)
                     activity.runOnUiThread(Runnable {
                         result.error("video_processing_failed", "video processing is failed.", null)
 
