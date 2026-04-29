@@ -20,19 +20,9 @@ class GlImageOverlayFilter(imageOverlay: ImageOverlay) : GlOverlayFilter() {
             val options = BitmapFactory.Options().apply {
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
-            val bitmap = BitmapFactory.decodeByteArray(
+            BitmapFactory.decodeByteArray(
                 imageOverlay.bitmap, 0, imageOverlay.bitmap.size, options
             )
-            if (bitmap != null) {
-                Log.d(TAG, "Decoded overlay bitmap: ${bitmap.width}x${bitmap.height}, " +
-                    "config=${bitmap.config}, byteCount=${bitmap.byteCount}, " +
-                    "pos=(${imageOverlay.x}, ${imageOverlay.y}), " +
-                    "hasTiming=${imageOverlay.hasTiming}")
-            } else {
-                Log.e(TAG, "BitmapFactory.decodeByteArray returned null — " +
-                    "input size=${imageOverlay.bitmap.size} bytes")
-            }
-            bitmap
         } catch (e: Exception) {
             Log.e(TAG, "Failed to decode overlay bitmap: ${e.message}", e)
             null
@@ -43,11 +33,7 @@ class GlImageOverlayFilter(imageOverlay: ImageOverlay) : GlOverlayFilter() {
     val currentTimeMs = AtomicLong(0)
 
     protected override fun drawCanvas(canvas: Canvas) {
-        val bitmap = decodedBitmap
-        if (bitmap == null) {
-            Log.w(TAG, "drawCanvas skipped — bitmap is null (decode failed)")
-            return
-        }
+        val bitmap = decodedBitmap ?: return
 
         val paint: Paint? = if (imageOverlay.hasTiming) {
             val tMs = currentTimeMs.get().toDouble()

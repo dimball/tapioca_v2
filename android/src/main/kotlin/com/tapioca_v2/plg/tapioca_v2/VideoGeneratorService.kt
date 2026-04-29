@@ -29,8 +29,6 @@ class VideoGeneratorService(
         // Track timed image overlay filters so we can update their time
         val timedImageFilters: MutableList<GlImageOverlayFilter> = mutableListOf()
 
-        Log.d(TAG, "writeVideofile: ${processing.size} processing entries")
-
         try {
             processing.forEach { (k, v) ->
                 // Strip index suffix (e.g. "ImageOverlay_1" → "ImageOverlay")
@@ -38,8 +36,6 @@ class VideoGeneratorService(
                 val baseKey = if (k.contains("_") && k.last().isDigit()) {
                     k.substringBeforeLast("_")
                 } else k
-
-                Log.d(TAG, "Processing entry '$k' (baseKey='$baseKey')")
 
                 when (baseKey) {
                     "Filter" -> {
@@ -53,14 +49,6 @@ class VideoGeneratorService(
                     }
                     "ImageOverlay" -> {
                         val imageOverlay = ImageOverlay(v)
-                        val bitmapSize = imageOverlay.bitmap.size
-                        Log.d(TAG, "ImageOverlay '$k': bitmap=${bitmapSize} bytes, " +
-                            "pos=(${imageOverlay.x}, ${imageOverlay.y}), " +
-                            "hasTiming=${imageOverlay.hasTiming}" +
-                            if (imageOverlay.hasTiming)
-                                ", start=${imageOverlay.startMs}ms, end=${imageOverlay.endMs}ms, " +
-                                "fadeIn=${imageOverlay.fadeInMs}ms, fadeOut=${imageOverlay.fadeOutMs}ms"
-                            else "")
                         val filter = GlImageOverlayFilter(imageOverlay)
                         if (imageOverlay.hasTiming) {
                             timedImageFilters.add(filter)
@@ -79,16 +67,16 @@ class VideoGeneratorService(
             .videoFormatMimeType(VideoFormatMimeType.MPEG4)
             .listener(object : Mp4Composer.Listener {
                 override fun onProgress(progress: Double) {
-                    Log.d(TAG, "onProgress = $progress")
                     activity.runOnUiThread(Runnable {
                         eventSink.success(progress)
                     })
                 }
 
-                override fun onCurrentWrittenVideoTime(currentTimeMs: Long) {
-                    // Update all timed image overlay filters with current time
+                override fun onCurrentWrittenVideoTime(timeUs: Long) {
+                    // Convert from microseconds (mp4compose API) to milliseconds
+                    val timeMs = timeUs / 1000L
                     for (filter in timedImageFilters) {
-                        filter.currentTimeMs.set(currentTimeMs)
+                        filter.currentTimeMs.set(timeMs)
                     }
                 }
 
